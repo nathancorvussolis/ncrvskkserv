@@ -1,7 +1,7 @@
 /*
 	ncrvskkserv 0.2.2
 
-	Copyright 2013-2015, SASAKI Nobuyuki. Licenced under the MIT license.
+	Copyright 2013-2015, SASAKI Nobuyuki. Licensed under the MIT license.
 
 	参照：     http://nodejs.org/
 
