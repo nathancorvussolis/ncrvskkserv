@@ -1,5 +1,5 @@
 /*
-	ncrvskkserv 0.3.0
+	ncrvskkserv 0.4.0
 	Copyright 2013-2016, SASAKI Nobuyuki. Licensed under the MIT license.
 
 	Node.js SKK server
@@ -12,43 +12,44 @@ var os = require('os');
 
 var host = '127.0.0.1'
 var port = 1178;
-var version = 'ncrvskkserv 0.3.0';
-var dictionary = new Array();
+var version = 'ncrvskkserv 0.4.0';
+var dictionary = {};
 
-if(process.argv.length != 3) return;
+console.log(version);
+
+if(process.argv.length != 3) {
+	console.log('usage: node ncrvskkserv.js <skk dic file>');
+	return;
+}
 
 var server = net.createServer(function(c) {
 	c.on('data', function(data) {
-		var req = data.toString('binary');
 		var res = '4\n';
+		var req = data.toString('binary');
 		var cmd = req.substr(0, 1);
+
 		switch(cmd) {
 		case '0':
 			c.end();
 			break;
 		case '1':
 			var key = req.substr(1);
-			var l = 0;
-			var r = dictionary.length - 1;
-			while(l <= r) {
-				var m = parseInt((l + r) / 2);
-				var keycmp = dictionary[m].key;
-				if(key == keycmp) {
-					res = '1' + dictionary[m].candidate;
-					break;
-				}
-				else if(key > keycmp) l = m + 1;
-				else if(key < keycmp) r = m - 1;
+			if(dictionary[key] != null) {
+				res = '1' + dictionary[key];
 			}
-			c.write(res, 'binary');
 			break;
 		case '2':
 			res = version + ' ';
-			c.write(res, 'binary');
 			break;
 		case '3':
 			res = os.hostname() + ':' + c.localAddress + ' ';
-			c.write(res, 'binary');
+			break;
+		default:
+			break;
+		}
+
+		switch(cmd) {
+		case '0':
 			break;
 		default:
 			c.write(res, 'binary');
@@ -58,20 +59,22 @@ var server = net.createServer(function(c) {
 });
 
 server.listen(port, host, function() {
-	var fc = fs.readFileSync(process.argv[2], 'binary');
-	var ln = fc.split('\n');
-	for(var i in ln) {
-		if(ln[i].startsWith(';;')) continue;
-		var sp = ln[i].indexOf(' /');
+	var buff = fs.readFileSync(process.argv[2], 'binary');
+	var lines = buff.split('\n');
+	var count = 0
+
+	for(var i in lines) {
+		var line = lines[i];
+		if(line.startsWith(';;')) continue;
+		var sp = line.indexOf(' /');
 		if(sp == -1) continue;
-		dictionary.push({
-			'key': ln[i].substr(0, sp + 1),
-			'candidate': ln[i].substr(sp + 1) + '\n'
-		});
+
+		var key = line.substr(0, sp + 1);
+		var candidates = line.substr(sp + 1) + '\n';
+		dictionary[key] = candidates;
+		++count;
 	}
-	dictionary.sort(function(x, y) {
-		return x.key > y.key ? 1 : -1;
-	});
-	console.log('entry count : ' + dictionary.length);
-	console.log('server bound port ' + port);
+
+	console.log('entry: ' + count);
+	console.log('port: ' + port);
 });
